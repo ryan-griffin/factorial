@@ -3,16 +3,29 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::sync::{Arc, Mutex};
 use std::thread;
-
-const FACTORIAL: usize = 1000000; // Factorial to compute
-const NUM_THREADS: usize = 12; // Number of threads to use
+use std::{env, process::exit};
 
 fn main() {
+    // Parse command line arguments for FACTORIAL and NUM_THREADS
+    let args: Vec<String> = env::args().collect();
+
+    if args.len() != 3 {
+        eprintln!("Usage: {} <FACTORIAL> <NUM_THREADS>", args[0]);
+        exit(1);
+    }
+
+    let factorial = args[1]
+        .parse::<usize>()
+        .expect("Invalid FACTORIAL argument");
+    let num_threads = args[2]
+        .parse::<usize>()
+        .expect("Invalid NUM_THREADS argument");
+
     // Create a vector to hold the results from each thread
     let mut results = vec![];
 
     // Divide the work into chunks for each thread
-    let chunk_size = FACTORIAL / NUM_THREADS;
+    let chunk_size = factorial / num_threads;
 
     // Create a vector to hold the thread handles
     let mut handles = vec![];
@@ -24,10 +37,10 @@ fn main() {
     let file = File::create("data.txt").unwrap();
     let mut writer = BufWriter::new(file);
 
-    for i in 0..NUM_THREADS {
+    for i in 0..num_threads {
         let start = i * chunk_size + 1;
-        let end = if i == NUM_THREADS - 1 {
-            FACTORIAL
+        let end = if i == num_threads - 1 {
+            factorial
         } else {
             (i + 1) * chunk_size
         };
@@ -51,7 +64,7 @@ fn main() {
 
                 // Print progress
                 if *progress % 1000 == 0 {
-                    println!("Progress: {}/{}", *progress, FACTORIAL);
+                    println!("Progress: {}/{}", *progress, factorial);
                 }
             }
             result
