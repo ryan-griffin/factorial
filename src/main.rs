@@ -1,10 +1,11 @@
 use num::{BigUint, FromPrimitive, One};
 use std::fs::File;
-use std::io::Write;
+use std::io::{BufWriter, Write};
+use std::sync::{Arc, Mutex};
 use std::thread;
 
-const FACTORIAL: usize = 1000000;
-const NUM_THREADS: usize = 8; // Number of threads to use
+const FACTORIAL: usize = 1000000; // Factorial to compute
+const NUM_THREADS: usize = 12; // Number of threads to use
 
 fn main() {
     // Create a vector to hold the results from each thread
@@ -15,6 +16,13 @@ fn main() {
 
     // Create a vector to hold the thread handles
     let mut handles = vec![];
+
+    // Create a shared progress counter using an Arc (atomic reference counter) and a Mutex
+    let progress = Arc::new(Mutex::new(0));
+
+    // Create a BufWriter for writing to the file
+    let file = File::create("data.txt").unwrap();
+    let mut writer = BufWriter::new(file);
 
     for i in 0..NUM_THREADS {
         let start = i * chunk_size + 1;
@@ -29,10 +37,22 @@ fn main() {
         let start_clone = start;
         let end_clone = end;
 
+        // Clone progress counter
+        let progress_clone = Arc::clone(&progress);
+
         // Spawn a thread for the chunk of work
         let handle = thread::spawn(move || {
             for j in start_clone..=end_clone {
                 result *= BigUint::from_usize(j).unwrap();
+
+                // Update the progress counter within the Mutex
+                let mut progress = progress_clone.lock().unwrap();
+                *progress += 1;
+
+                // Print progress
+                if *progress % 1000 == 0 {
+                    println!("Progress: {}/{}", *progress, FACTORIAL);
+                }
             }
             result
         });
@@ -51,9 +71,9 @@ fn main() {
         final_result *= result;
     }
 
-    // Write the final result to a file
-    File::create("data.txt")
-        .unwrap()
-        .write(final_result.to_string().as_bytes())
-        .unwrap();
+    // Write the final result to the file using the BufWriter
+    writer.write(final_result.to_string().as_bytes()).unwrap();
+    writer.flush().unwrap(); // Ensure that all buffered data is written
+
+    println!("Result written to data.txt");
 }
