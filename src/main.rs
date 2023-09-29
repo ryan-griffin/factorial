@@ -21,11 +21,11 @@ fn main() {
         .parse::<usize>()
         .expect("Invalid NUM_THREADS argument");
 
-    // Create a vector to hold the results from each thread
-    let mut results = vec![];
-
     // Divide the work into chunks for each thread
     let chunk_size = factorial / num_threads;
+
+    // Create a vector to hold the results from each thread
+    let mut results = vec![];
 
     // Create a vector to hold the thread handles
     let mut handles = vec![];
@@ -33,11 +33,8 @@ fn main() {
     // Create a shared progress counter using an Arc (atomic reference counter) and a Mutex
     let progress = Arc::new(Mutex::new(0));
 
-    // Create a BufWriter for writing to the file
-    let file = File::create("data.txt").unwrap();
-    let mut writer = BufWriter::new(file);
-
     for i in 0..num_threads {
+        // Calculate the start and end of the chunk
         let start = i * chunk_size + 1;
         let end = if i == num_threads - 1 {
             factorial
@@ -45,21 +42,22 @@ fn main() {
             (i + 1) * chunk_size
         };
 
-        // Clone variables needed in the thread
-        let mut result = BigUint::one();
-        let start_clone = start;
-        let end_clone = end;
-
         // Clone progress counter
         let progress_clone = Arc::clone(&progress);
 
         // Spawn a thread for the chunk of work
         let handle = thread::spawn(move || {
-            for j in start_clone..=end_clone {
+            // create initial result for chunk
+            let mut result = BigUint::one();
+
+            // Lock the progress counter within the Mutex
+            let mut progress = progress_clone.lock().unwrap();
+
+            for j in start..=end {
+                // Multiply the result by j
                 result *= BigUint::from_usize(j).unwrap();
 
                 // Update the progress counter within the Mutex
-                let mut progress = progress_clone.lock().unwrap();
                 *progress += 1;
 
                 // Print progress
@@ -83,6 +81,10 @@ fn main() {
     for result in results {
         final_result *= result;
     }
+
+    // Create a BufWriter for writing to the file
+    let file = File::create("data.txt").unwrap();
+    let mut writer = BufWriter::new(file);
 
     // Write the final result to the file using the BufWriter
     writer.write(final_result.to_string().as_bytes()).unwrap();
