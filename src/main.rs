@@ -24,11 +24,11 @@ fn main() {
     // Divide the work into chunks for each thread
     let chunk_size = factorial / num_threads;
 
-    // Create a vector to hold the results from each thread
-    let mut results = vec![];
-
     // Create a vector to hold the thread handles
     let mut handles = vec![];
+
+    // Create a vector to hold the results from each thread
+    let mut results = vec![];
 
     // Create a shared progress counter using an Arc (atomic reference counter) and a Mutex
     let progress = Arc::new(Mutex::new(0));
@@ -62,7 +62,7 @@ fn main() {
 
                 // Print progress
                 if *progress % 1000 == 0 {
-                    println!("Progress: {}/{}", *progress, factorial);
+                    println!("{}/{}", *progress, factorial);
                 }
             }
             result
@@ -72,23 +72,25 @@ fn main() {
     }
 
     // Wait for all threads to finish and collect their results
-    for handle in handles {
+    for (i, handle) in handles.into_iter().enumerate() {
         results.push(handle.join().unwrap());
+        println!("Thread {} finished", i);
     }
 
     // Combine the results from each thread into a final result
+    println!("Combining results from threads...");
     let mut final_result = BigUint::one();
     for result in results {
         final_result *= result;
     }
 
-    // Create a BufWriter for writing to the file
+    // Write the final result to a file
+    let final_result_str = final_result.to_string();
+    println!("Writing {}B to data.txt...", final_result_str.len());
     let file = File::create("data.txt").unwrap();
     let mut writer = BufWriter::new(file);
-
-    // Write the final result to the file using the BufWriter
-    writer.write(final_result.to_string().as_bytes()).unwrap();
+    writer.write(final_result_str.as_bytes()).unwrap();
     writer.flush().unwrap(); // Ensure that all buffered data is written
 
-    println!("Result written to data.txt");
+    println!("Factorial written to data.txt");
 }
