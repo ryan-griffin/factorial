@@ -94,10 +94,13 @@ fn main() {
     // Convert final result to string
     let final_result_str = final_result.to_string();
 
-    println!("Writing to data.txt...");
+    // Create file name
+    let file_name = format!("{}.txt", factorial);
+
+    println!("Writing to {}...", file_name);
 
     // Create a buffered file writer
-    let mut writer = BufWriter::new(File::create("data.txt").unwrap());
+    let mut writer = BufWriter::new(File::create(&file_name).unwrap());
 
     // Write result to the file
     writer.write_all(final_result_str.as_bytes()).unwrap();
@@ -105,5 +108,5 @@ fn main() {
     // Ensure that all buffered data is written
     writer.flush().unwrap();
 
-    println!("Factorial written to data.txt");
+    println!("Factorial written to {}", file_name);
 }
