@@ -53,6 +53,8 @@ fn main() {
 
         // Spawn a thread for the chunk of work
         let handle = thread::spawn(move || {
+            info!("Thread {} started", i);
+
             // create initial result for chunk
             let mut result = BigUint::one();
 
