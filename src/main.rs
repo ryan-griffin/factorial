@@ -33,13 +33,13 @@ fn main() {
     // Create a shared progress counter using an Arc (atomic reference counter) and a Mutex
     let progress = Arc::new(Mutex::new(0));
 
-    for i in 0..num_threads {
+    for i in 1..=num_threads {
         // Calculate the start and end of the chunk
-        let start = i * chunk_size + 1;
-        let end = if i == num_threads - 1 {
+        let start = (i - 1) * chunk_size + 1;
+        let end = if i == num_threads {
             factorial
         } else {
-            (i + 1) * chunk_size
+            i * chunk_size
         };
 
         // Clone progress counter
@@ -74,23 +74,36 @@ fn main() {
     // Wait for all threads to finish and collect their results
     for (i, handle) in handles.into_iter().enumerate() {
         results.push(handle.join().unwrap());
-        println!("Thread {} finished", i);
+        println!("Thread {} finished", i + 1);
     }
 
-    // Combine the results from each thread into a final result
     println!("Combining results from threads...");
+
+    // Initialize final result
     let mut final_result = BigUint::one();
-    for result in results {
+
+    // Combine the results from each thread into the final result
+    for (i, result) in results.into_iter().enumerate() {
         final_result *= result;
+        println!("{}/{}", i + 1, num_threads);
     }
 
-    // Write the final result to a file
+    println!("Final result is {}B", final_result.to_bytes_be().len());
+    println!("Converting to string...");
+
+    // Convert final result to string
     let final_result_str = final_result.to_string();
-    println!("Writing {}B to data.txt...", final_result_str.len());
-    let file = File::create("data.txt").unwrap();
-    let mut writer = BufWriter::new(file);
-    writer.write(final_result_str.as_bytes()).unwrap();
-    writer.flush().unwrap(); // Ensure that all buffered data is written
+
+    println!("Writing to data.txt...");
+
+    // Create a buffered file writer
+    let mut writer = BufWriter::new(File::create("data.txt").unwrap());
+
+    // Write result to the file
+    writer.write_all(final_result_str.as_bytes()).unwrap();
+
+    // Ensure that all buffered data is written
+    writer.flush().unwrap();
 
     println!("Factorial written to data.txt");
 }
