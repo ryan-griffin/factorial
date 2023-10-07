@@ -1,7 +1,7 @@
 use log::{info, LevelFilter};
 use num::{BigUint, FromPrimitive, One};
 use std::fs::File;
-use std::io::{BufWriter, Write};
+use std::io::Write;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::{env, process::exit};
@@ -95,25 +95,38 @@ fn main() {
         info!("{}/{}", i + 1, num_threads);
     }
 
-    info!("Final result is {}B", final_result.to_bytes_be().len());
-    info!("Converting to string...");
+    // Convert final result to bytes
+    let final_result_bytes = final_result.to_bytes_be();
+
+    info!("Final result is {}B", final_result_bytes.len());
+
+    // Create bytes file name
+    let file_name_bytes = format!("{}.bin", factorial);
+
+    info!("Writing bytes to {}...", file_name_bytes);
+
+    // Write bytes to file
+    File::create(&file_name_bytes)
+        .unwrap()
+        .write_all(&final_result_bytes)
+        .unwrap();
+
+    info!("Factorial written to {}", file_name_bytes);
+    info!("Converting bytes to string...");
 
     // Convert final result to string
     let final_result_str = final_result.to_string();
 
-    // Create file name
-    let file_name = format!("{}.txt", factorial);
+    // Create string file name
+    let file_name_str = format!("{}.txt", factorial);
 
-    info!("Writing to {}...", file_name);
+    info!("Writing string to {}...", file_name_str);
 
-    // Create a buffered file writer
-    let mut writer = BufWriter::new(File::create(&file_name).unwrap());
+    // Write result to string file
+    File::create(&file_name_str)
+        .unwrap()
+        .write_all(final_result_str.as_bytes())
+        .unwrap();
 
-    // Write result to the file
-    writer.write_all(final_result_str.as_bytes()).unwrap();
-
-    // Ensure that all buffered data is written
-    writer.flush().unwrap();
-
-    info!("Factorial written to {}", file_name);
+    info!("Factorial written to {}", file_name_str);
 }
